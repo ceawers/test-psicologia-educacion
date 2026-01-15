@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Test Psicología de la Educación</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f4f4f4; padding:20px; }
+h1 { text-align:center; }
+.tabs { display:flex; justify-content:center; gap:10px; margin-bottom:20px; }
+.tabs button { padding:8px 14px; cursor:pointer; }
+.active { background:#ccc; }
+.question { background:white; padding:15px; margin-bottom:15px; border-radius:6px; }
+.correct { color:green; }
+.incorrect { color:red; }
+#stats { background:#ddd; padding:10px; margin-bottom:20px; border-radius:6px; text-align:center; }
+</style>
+</head>
+
+<body>
+
+<h1>Test Psicología de la Educación</h1>
+
+<div class="tabs">
+  <button id="btnStudy" class="active" onclick="setMode('study')">Modo Estudio</button>
+  <button id="btnExam" onclick="setMode('exam')">Modo Examen</button>
+  <button id="btnWrong" onclick="setMode('wrong')">Repetir Fallos</button>
+</div>
+
+<div id="stats">
+  Aciertos: <span id="corrects">0</span> |
+  Fallos: <span id="incorrects">0</span>
+  <div id="finalScore"></div>
+</div>
+
+<div id="quiz"></div>
+
+<script>
+let mode = "study";
+let correct = 0;
+let incorrect = 0;
+let answered = new Set();
+let wrongQuestions = [];
+
+const questions = [
+  {q:"¿Cuál es la base biológica imprescindible para que se manifieste cualquier forma de conducta?",
+   options:["Únicamente el sistema sensorial","El sistema sensorial, el sistema nervioso y el sistema endocrino","Solo el sistema nervioso central","La herencia genética sin mediación orgánica"],
+   answer:1, topic:"2.np"},
+  {q:"¿Qué diferencia fundamental existe entre un reflejo y un instinto?",
+   options:["El reflejo es aprendido","El reflejo cesa con el estímulo y el instinto se activa por estados internos","El reflejo es complejo","No hay diferencia"],
+   answer:1, topic:"2.np"},
+  {q:"¿Cómo define Feldman (2005) el aprendizaje?",
+   options:["Cambio irreversible","Cambio relativamente permanente generado por la experiencia","Adquisición pasiva","Crecimiento biológico"],
+   answer:1, topic:"2.1.1"},
+  {q:"Según Schmeck (1988), el aprendizaje es subproducto de:",
+   options:["Repetición","Inteligencia cristalizada","Pensamiento","Maduración"],
+   answer:2, topic:"2.1.1"},
+  {q:"En la jerarquía de conductas, el aprendizaje ocupa:",
+   options:["Nivel inferior","Mismo nivel","Nivel superior","No forma parte"],
+   answer:2, topic:"2.1"},
+  {q:"¿Quién introdujo el concepto de paradigma?",
+   options:["Piaget","Thomas S. Kuhn","Skinner","Vygotsky"],
+   answer:1, topic:"2.3.1"},
+  {q:"El paradigma conductista se centra en:",
+   options:["Procesos inconscientes","Conducta observable","Construcción social","Autorrealización"],
+   answer:1, topic:"2.3.2"},
+  {q:"Según el paradigma cognitivo, el sujeto es:",
+   options:["Pasivo","Procesador activo de información","Movido por instintos","Tabula rasa"],
+   answer:1, topic:"2.3.3"},
+  {q:"El paradigma ecológico define la conducta como función de:",
+   options:["Refuerzo","Persona y ambiente","Herencia","Autoconcepto"],
+   answer:1, topic:"2.3.4"},
+  {q:"La Declaración de Salamanca consolida el paradigma:",
+   options:["Conductista","Inclusivo","Computacional","Genético"],
+   answer:1, topic:"2.3.5"},
+
+  {q:"¿Quién descubrió el condicionamiento clásico?",
+   options:["Watson","Pavlov","Thorndike","Skinner"],
+   answer:1, topic:"3.1.1"},
+  {q:"En Pavlov, el diapasón tras el aprendizaje es:",
+   options:["EI","EC","RI","Estímulo neutro"],
+   answer:1, topic:"3.1.1"},
+  {q:"Cuando el EC deja de ir con el EI ocurre:",
+   options:["Generalización","Adquisición","Extinción","Discriminación"],
+   answer:2, topic:"3.1.1"},
+  {q:"La Ley del Efecto fue formulada por:",
+   options:["Watson","Pavlov","Thorndike","Skinner"],
+   answer:2, topic:"3.1.3.1"},
+  {q:"Según Skinner, la conducta depende de:",
+   options:["Estímulo","Consecuencias","Voluntad","Reflejos"],
+   answer:1, topic:"3.1.3.2"},
+  {q:"Reforzar aproximaciones sucesivas se llama:",
+   options:["Saciedad","Moldeamiento","Extinción","Castigo"],
+   answer:1, topic:"3.1.3.2"},
+  {q:"Bandura denomina aprendizaje por observación:",
+   options:["Operante","Vicario","Receptivo","Descubrimiento"],
+   answer:1, topic:"3.3.1.1"},
+  {q:"La mente se compara con un ordenador en el modelo:",
+   options:["Conductista","Procesamiento de la información","Humanista","Ecológico"],
+   answer:1, topic:"3.4"},
+  {q:"Para Piaget, el mecanismo regulador es:",
+   options:["Motivación","Equilibración","Interferencia","Práctica"],
+   answer:1, topic:"3.5.2.1"},
+  {q:"La distancia entre lo que el niño hace solo y con ayuda es:",
+   options:["Andamiaje","ZDP","Estadio","Estructura"],
+   answer:1, topic:"3.5.5.2"},
+
+  {q:"El primer eslabón del aprendizaje es:",
+   options:["Memoria","Percepción","Metacognición","Olvido"],
+   answer:1, topic:"4.1.1"},
+  {q:"La ley Gestalt de completar figuras es:",
+   options:["Proximidad","Semejanza","Cierre","Simetría"],
+   answer:2, topic:"4.1.1.1"},
+  {q:"Mantener el foco atencional es:",
+   options:["Espontánea","Sostenida","Dividida","Refleja"],
+   answer:1, topic:"4.1.2"},
+  {q:"La práctica distribuida mejora:",
+   options:["Velocidad","Retención a largo plazo","Esfuerzo","Sílabas"],
+   answer:1, topic:"4.2"},
+  {q:"Capacidad de la memoria de trabajo:",
+   options:["1-3","5-9","Ilimitada","20"],
+   answer:1, topic:"4.2.1.2"},
+  {q:"La memoria de conocimientos generales es:",
+   options:["Episódica","Semántica","Procedimental","Sensorial"],
+   answer:1, topic:"4.2.1.3"},
+  {q:"Interferencia nueva sobre vieja es:",
+   options:["Proactiva","Retroactiva","Decaimiento","Reconciliación"],
+   answer:1, topic:"4.3.2"},
+  {q:"La pirámide de necesidades es de:",
+   options:["Rogers","Maslow","Weiner","McClelland"],
+   answer:1, topic:"4.4.2.2"},
+  {q:"En Weiner, locus significa:",
+   options:["Estabilidad","Interno/externo","Control","Inteligencia"],
+   answer:1, topic:"4.4.2.3"},
+  {q:"La metacognición fue introducida por:",
+   options:["Flavell","Vygotsky","Bruner","Ausubel"],
+   answer:0, topic:"4.6"},
+
+  {q:"El clima emocional del aula es:",
+   options:["Temperatura","Relaciones emocionales","Mobiliario","Ruido"],
+   answer:1, topic:"5.1"},
+  {q:"El modelo Presagio-Producto se centraba en:",
+   options:["Conducta docente","Rasgos del profesor","Ecosistema","Decisiones"],
+   answer:1, topic:"5.2.1.1"},
+  {q:"El concepto de andamiaje fue introducido por:",
+   options:["Vygotsky","Wood, Bruner y Ross","Piaget","Skinner"],
+   answer:1, topic:"5.4"},
+  {q:"Grupo cooperativo ideal:",
+   options:["2 homogéneos","4-6 heterogéneos","Toda la clase","10 alumnos"],
+   answer:1, topic:"5.5.1"},
+  {q:"Interdependencia positiva significa:",
+   options:["Individualismo","Éxito compartido","Dependencia del profesor","Sin responsabilidad"],
+   answer:1, topic:"5.5.1.2"},
+  {q:"Según Garaigordobil, el juego se caracteriza por:",
+   options:["Obligación","Placer y ficción","Esfuerzo","Sin reglas"],
+   answer:1, topic:"5.6"},
+  {q:"El juego de reglas es propio de:",
+   options:["Sensoriomotora","Operaciones concretas","Nacimiento","No existe"],
+   answer:1, topic:"5.6.1.1"},
+  {q:"Las fases del proceso creativo son:",
+   options:["Inicio-nudo","Preparación-incubación-iluminación-verificación","Sueño-acción","Idea-dibujo"],
+   answer:1, topic:"5.6.2.1"},
+  {q:"Pensamiento de una única respuesta correcta:",
+   options:["Divergente","Lateral","Convergente","Creativo"],
+   answer:2, topic:"5.6.2.3"},
+  {q:"Indicadores de creatividad según Guilford:",
+   options:["Velocidad","Fluidez-flexibilidad-originalidad","Memoria","Disciplina"],
+   answer:1, topic:"5.6.2.2"},
+
+  {q:"James afirmó que las emociones son:",
+   options:["Inconscientes","Experiencias subjetivas","Estéticas","Políticas"],
+   answer:1, topic:"6.1.1"},
+  {q:"Para Darwin, la función de la emoción es:",
+   options:["Estética","Adaptativa","Razonamiento","Control"],
+   answer:1, topic:"6.1.1"},
+  {q:"Los pilares del Informe Delors son:",
+   options:["Leer-escribir","Conocer-hacer-ser-convivir","Memoria","Familia"],
+   answer:1, topic:"6.1.2"},
+  {q:"Regular emociones según Bisquerra es:",
+   options:["Conciencia","Regulación emocional","Autonomía","Interpersonal"],
+   answer:1, topic:"6.1.2.2"},
+  {q:"Autor que afirma que sin emoción no hay aprendizaje:",
+   options:["Skinner","Francisco Mora","Thorndike","Piaget"],
+   answer:1, topic:"6.1.3"},
+  {q:"El agotamiento profesional docente es:",
+   options:["Coping","Burnout","Resiliencia","Feedback"],
+   answer:1, topic:"6.2.1"},
+  {q:"Alto afecto y alto control es estilo:",
+   options:["Autoritario","Democrático","Permisivo","Negligente"],
+   answer:1, topic:"6.3.2.1"},
+  {q:"Disciplina positiva se basa en:",
+   options:["Castigo","Firmeza y amabilidad","Autoridad","Silencio"],
+   answer:1, topic:"6.4"},
+
+{
+  q:"¿Qué proceso se excluye explícitamente de la definición de aprendizaje por ser un cambio transitorio?",
+  options:["La práctica continuada","El envejecimiento biológico","El efecto de las drogas o la fatiga","La observación de otras personas"],
+  answer:2, topic:"2.1.1"
+},
+{
+  q:"¿Qué autor sostiene que el desarrollo se sustenta en aprendizaje y maduración como procesos complementarios?",
+  options:["Jean Piaget","Lev Vygotsky","Kurt Koffka","Feldman"],
+  answer:2, topic:"2.2"
+},
+{
+  q:"En la jerarquía de conductas, ¿qué caracteriza al instinto frente al reflejo?",
+  options:["Respuesta simple","Se activa por estados internos","Es aprendido","Son idénticos"],
+  answer:1, topic:"2.np"
+},
+{
+  q:"Para Kuhn, la “matriz disciplinar” hace referencia a:",
+  options:["Currículum escolar","Paradigma compartido","Evaluación por competencias","Análisis conductual"],
+  answer:1, topic:"2.3.1"
+},
+{
+  q:"El paradigma que concibe al docente como técnico que aplica procedimientos es:",
+  options:["Cognitivo","Conductista","Ecológico","Inclusivo"],
+  answer:1, topic:"2.3.2"
+},
+{
+  q:"La recuperación espontánea demuestra que:",
+  options:["El olvido es definitivo","El aprendizaje no se elimina","No hay generalización","El estímulo neutro predomina"],
+  answer:1, topic:"3.1.1"
+},
+{
+  q:"Limitación principal de la teoría de Thorndike según el temario:",
+  options:["Niega ensayo-error","No desarrolla teoría de la motivación","Ignora la ley del efecto","Solo procesos internos"],
+  answer:1, topic:"3.1.3.1"
+},
+{
+  q:"El refuerzo intermitente es más eficaz para:",
+  options:["Adquirir rápido","Mantener conductas","Castigar","Extinguir"],
+  answer:1, topic:"3.1.3.2"
+},
+{
+  q:"Tolman introduce que:",
+  options:["Siempre hay refuerzo","Puede haber aprendizaje sin refuerzo","No hay intencionalidad","E-R explica todo"],
+  answer:1, topic:"3.2.1"
+},
+{
+  q:"Bandura identifica dos sistemas de codificación:",
+  options:["Visual y auditivo","Imaginativo y verbal","Premio-castigo","Motor-sensorial"],
+  answer:1, topic:"3.3.1.4"
+},
+{
+  q:"La Gramática Transformacional fue propuesta por:",
+  options:["Gagné","Chomsky","Bruner","Ausubel"],
+  answer:1, topic:"2.3.3.1"
+},
+{
+  q:"Modificar esquemas para integrar lo nuevo se llama:",
+  options:["Asimilación","Acomodación","Equilibración","Desfase"],
+  answer:1, topic:"3.5.2.1"
+},
+{
+  q:"El currículo espiral defiende que:",
+  options:["Un contenido se da una vez","Todo puede enseñarse si se representa bien","Solo superdotados","Aprendizaje físico"],
+  answer:1, topic:"3.5.1"
+},
+{
+  q:"Para Ausubel, la significatividad psicológica requiere:",
+  options:["Estructura lógica","Ideas inclusoras previas","Carisma docente","Memorización literal"],
+  answer:1, topic:"3.5.3.1"
+},
+{
+  q:"Rumelhart define la reestructuración como:",
+  options:["Añadir datos","Crear nuevas estructuras conceptuales","Ajustar esquemas","Copiar información"],
+  answer:1, topic:"3.5.4.2"
+},
+{
+  q:"Bartlett se diferencia de Ebbinghaus porque utilizó:",
+  options:["Sílabas sin sentido","Textos significativos","Memoria sensorial","Método idéntico"],
+  answer:1, topic:"3.4 / 3.5.4.1"
+},
+{
+  q:"La ley Gestalt de la buena forma es la de:",
+  options:["Simetría","Pregnancia","Dirección común","Figura-fondo"],
+  answer:1, topic:"4.1.1.1"
+},
+{
+  q:"Baddeley estima el repaso mental en:",
+  options:["10 s","1,5 s","5 s","Ilimitado"],
+  answer:1, topic:"4.2.1.2"
+},
+{
+  q:"Ejemplo de memoria procedimental:",
+  options:["Capital de Italia","Primer día de colegio","Escribir sin mirar","Saber que una ballena es mamífero"],
+  answer:2, topic:"4.2.1.3"
+},
+{
+  q:"La técnica de loci sirve para:",
+  options:["Idiomas","Ítems inconexos en recorridos","Conceptos abstractos","Atención"],
+  answer:1, topic:"4.2.1.5"
+},
+{
+  q:"Atribuir el fracaso a mala suerte es:",
+  options:["Interna-estable","Externa-inestable","Interna-controlable","Externa-estable"],
+  answer:1, topic:"4.4.2.3"
+},
+{
+  q:"La motivación de logro es:",
+  options:["Evitar riesgos","Superar estándares","Relaciones sociales","Premios económicos"],
+  answer:1, topic:"4.4.2.3"
+},
+{
+  q:"El feedback procede de:",
+  options:["Humanismo","Comunicación y Cibernética","Psicoanálisis","Gestalt"],
+  answer:1, topic:"2.3.3.1"
+},
+{
+  q:"El modelo Proceso-Producto surge tras:",
+  options:["Revolución Industrial","Informe Coleman","II Guerra Mundial","Ordenador personal"],
+  answer:1, topic:"5.2.1.1"
+},
+{
+  q:"El modelo mediacional ve al profesor como:",
+  options:["Transmisor","Procesador de decisiones","Vigilante","Evaluador de rasgos"],
+  answer:1, topic:"5.2.1.1"
+},
+{
+  q:"La dimensión que regula el traspaso de control es:",
+  options:["Espacial","Temporal y contingente","Personalidad","Castigo"],
+  answer:1, topic:"5.3"
+},
+{
+  q:"La autoevaluación cooperativa implica:",
+  options:["Ponerse nota","Analizar funcionamiento del grupo","Evaluar al profesor","Competir"],
+  answer:1, topic:"5.5.1.1"
+},
+{
+  q:"Los juegos cooperativos implican:",
+  options:["Un ganador","Ayuda mutua","Sin reglas","Juego individual"],
+  answer:1, topic:"5.6.1.1"
+},
+{
+  q:"La incubación creativa consiste en:",
+  options:["Estudio intenso","Dejar latente el problema","Eureka","Evaluar"],
+  answer:1, topic:"5.6.2.1"
+},
+{
+  q:"El pensamiento lateral se asocia a:",
+  options:["Convergente","Divergente","Lógico","Inconsciente"],
+  answer:1, topic:"5.6.2.3"
+},
+{
+  q:"Kleinginna recopiló definiciones de emoción en:",
+  options:["James","Kleinginna","Darwin","Damasio"],
+  answer:1, topic:"6.1.1"
+},
+{
+  q:"La conciencia emocional incluye:",
+  options:["Generar emociones","Captar clima emocional","Control de impulsos","Resolver problemas"],
+  answer:1, topic:"6.1.2.2"
+},
+{
+  q:"La ansiedad materna sostenida afecta al feto por:",
+  options:["Dopamina","Cortisol","Adrenalina","Serotonina"],
+  answer:1, topic:"6.3.2"
+},
+{
+  q:"El programa CARE se basa en:",
+  options:["Castigo","Mindfulness y resiliencia","Conductismo","Objetivos operativos"],
+  answer:1, topic:"6.2.1"
+},
+{
+  q:"El estilo negligente es:",
+  options:["Bajo afecto-alto control","Bajo afecto-bajo control","Alto afecto-bajo control","Alto afecto-alto control"],
+  answer:1, topic:"6.3.2.1"
+},
+{
+  q:"La Disciplina Positiva rechaza:",
+  options:["Normas","Castigo físico y emocional","Refuerzo","Diálogo"],
+  answer:1, topic:"6.4"
+},
+{
+  q:"Explorar límites implica:",
+  options:["Hambre","Desafiar al adulto","Autoconcepto alto","Aburrimiento"],
+  answer:1, topic:"6.4"
+},
+{
+  q:"La perversión dominio-sumisión explica:",
+  options:["Amistad","Bullying","Cooperación","Inteligencia emocional"],
+  answer:1, topic:"6.4"
+},
+{
+  q:"Aprender a ser se orienta a:",
+  options:["Proyectos","Autonomía y responsabilidad","Formación técnica","Historia"],
+  answer:1, topic:"6.1.2"
+},
+{
+  q:"La corriente New Look defendía que la percepción:",
+  options:["Es objetiva","Depende de expectativas","Es innata","Es estructural"],
+  answer:1, topic:"6.1.3"
+}
+
+
+];
+
+function setMode(m){
+  mode=m; correct=0; incorrect=0; answered.clear();
+  document.getElementById("corrects").innerText=0;
+  document.getElementById("incorrects").innerText=0;
+  document.getElementById("finalScore").innerText="";
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("btn"+m.charAt(0).toUpperCase()+m.slice(1)).classList.add("active");
+  loadQuiz(m==="wrong"?wrongQuestions:questions);
+}
+
+function loadQuiz(list){
+  const quiz=document.getElementById("quiz");
+  quiz.innerHTML="";
+  list.forEach((q,i)=>{
+    const div=document.createElement("div");
+    div.className="question";
+    div.innerHTML=`<strong>${q.q}</strong><br>`;
+    q.options.forEach((o,j)=>{
+      div.innerHTML+=`<label><input type="radio" name="q${i}" onclick="answer(${i},${j})"> ${o}</label><br>`;
+    });
+    div.innerHTML+=`<div id="r${i}"></div>`;
+    quiz.appendChild(div);
+  });
+}
+
+function answer(i, sel){
+  if(answered.has(i)) return;
+  answered.add(i);
+
+  const currentList = (mode==="wrong"? wrongQuestions : questions);
+  const q = currentList[i];
+
+  document.querySelectorAll(`input[name="q${i}"]`).forEach(r=>r.disabled=true);
+  const res=document.getElementById("r"+i);
+
+  if(sel===q.answer){
+    correct++;
+    if(mode!=="exam"){
+      res.innerHTML=`<span class="correct">Correcto.${mode==="study"?" Temario: "+q.topic:""}</span>`;
+    }
+
+    // ⭐ NUEVO: si estamos en modo fallos, eliminarla
+    if(mode==="wrong"){
+      wrongQuestions = wrongQuestions.filter(w => w !== q);
+      setTimeout(()=> loadQuiz(wrongQuestions), 500);
+    }
+
+  } else {
+    incorrect++;
+    if(!wrongQuestions.includes(q)) wrongQuestions.push(q);
+    if(mode!=="exam"){
+      res.innerHTML=`<span class="incorrect">Incorrecto.${mode==="study"?" Temario: "+q.topic:""}</span>`;
+    }
+  }
+
+  document.getElementById("corrects").innerText=correct;
+  document.getElementById("incorrects").innerText=incorrect;
+
+  if(mode==="exam" && answered.size===questions.length){
+    document.getElementById("finalScore").innerText=
+      `Nota final: ${(correct/questions.length*10).toFixed(2)}/10`;
+  }
+}
+
+
+loadQuiz(questions);
+</script>
+
+</body>
+</html>
