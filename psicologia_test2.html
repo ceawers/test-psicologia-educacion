@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Test Psicología de la Educación</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f6f6f6;
+  margin: 0;
+  padding: 20px;
+}
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+}
+h1 {
+  text-align: center;
+}
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  background: #ddd;
+}
+.tabs button.active {
+  background: #cfa8ff;
+  color: white;
+}
+.opcion {
+  margin: 10px 0;
+}
+.opcion input {
+  margin-right: 8px;
+}
+.correcta {
+  color: green;
+  font-weight: bold;
+}
+.incorrecta {
+  color: red;
+  font-weight: bold;
+}
+.info {
+  margin-top: 10px;
+  font-style: italic;
+}
+.contador {
+  margin-top: 15px;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>Test Psicología de la Educación</h1>
+
+<div class="tabs">
+  <button onclick="cambiarModo('normal')" id="btn-normal" class="active">Modo normal</button>
+  <button onclick="cambiarModo('examen')" id="btn-examen">Modo examen</button>
+  <button onclick="cambiarModo('falladas')" id="btn-falladas">Preguntas falladas</button>
+</div>
+
+<div id="test"></div>
+<div class="contador" id="contador"></div>
+
+</div>
+
+<script>
+const preguntas = [
+{
+id:1,
+pregunta:"¿Qué proceso se excluye explícitamente de la definición de aprendizaje por ser un cambio transitorio?",
+opciones:["La práctica continuada","El envejecimiento biológico","El efecto de las drogas o la fatiga","La observación de otras personas"],
+correcta:"C",
+tema:"2.1.1"
+},
+{
+id:2,
+pregunta:"¿Qué autor sostiene que el desarrollo está sustentado tanto en el aprendizaje como en la maduración?",
+opciones:["Jean Piaget","Lev Vygotsky","Kurt Koffka","Feldman"],
+correcta:"C",
+tema:"2.2"
+},
+{
+id:3,
+pregunta:"¿Qué caracteriza al instinto frente al reflejo?",
+opciones:["Respuesta simple","Se activa por estados internos","Es aprendido","Son idénticos"],
+correcta:"B",
+tema:"2.np"
+},
+{
+id:4,
+pregunta:"La matriz disciplinar de Kuhn se refiere a:",
+opciones:["Currículum escolar","Paradigma científico","Evaluación","Análisis de tareas"],
+correcta:"B",
+tema:"2.3.1"
+},
+{
+id:5,
+pregunta:"¿Qué paradigma define al docente como técnico instruido?",
+opciones:["Cognitivo","Conductista","Ecológico","Inclusivo"],
+correcta:"B",
+tema:"2.3.2"
+},
+{
+id:6,
+pregunta:"¿Qué demuestra la recuperación espontánea?",
+opciones:["Olvido definitivo","Aprendizaje inhibido","Preferencia estímulo","No hay generalización"],
+correcta:"B",
+tema:"3.1.1"
+},
+{
+id:7,
+pregunta:"Limitación principal de Thorndike:",
+opciones:["Niega ensayo-error","No teoría motivación","Ignora ley efecto","Solo procesos internos"],
+correcta:"B",
+tema:"3.1.3.1"
+},
+{
+id:8,
+pregunta:"El refuerzo intermitente es eficaz para:",
+opciones:["Adquirir rápido","Mantener a largo plazo","Extinguir","Castigar"],
+correcta:"B",
+tema:"3.1.3.2"
+},
+{
+id:9,
+pregunta:"Tolman introdujo:",
+opciones:["Recompensa obligatoria","Aprendizaje sin refuerzo","Conducta no intencional","E-R suficiente"],
+correcta:"B",
+tema:"3.2.1"
+},
+{
+id:10,
+pregunta:"Bandura distingue dos sistemas:",
+opciones:["Visual y auditivo","Imaginativo y verbal","Premios y castigos","Motor y sensorial"],
+correcta:"B",
+tema:"3.3.1.4"
+}
+];
+
+let modoActual = "normal";
+let indice = 0;
+let aciertos = 0;
+let fallos = 0;
+let preguntasFalladas = JSON.parse(localStorage.getItem("falladas")) || [];
+let respondida = false;
+
+function cambiarModo(modo){
+  modoActual = modo;
+  indice = 0;
+  aciertos = 0;
+  fallos = 0;
+  respondida = false;
+
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("btn-"+modo).classList.add("active");
+
+  mostrarPregunta();
+}
+
+function obtenerLista(){
+  if(modoActual==="falladas") return preguntasFalladas;
+  return preguntas;
+}
+
+function mostrarPregunta(){
+  respondida = false;
+  const lista = obtenerLista();
+  const cont = document.getElementById("test");
+  cont.innerHTML = "";
+
+  if(lista.length===0){
+    cont.innerHTML = "<p>No hay preguntas en este modo.</p>";
+    return;
+  }
+
+  const p = lista[indice % lista.length];
+
+  let html = `<h3>${p.pregunta}</h3>`;
+  p.opciones.forEach((op,i)=>{
+    const letra = String.fromCharCode(65+i);
+    html += `
+    <div class="opcion">
+      <label>
+        <input type="radio" name="opcion" onclick="responder('${letra}',${p.id})">
+        ${letra}) ${op}
+      </label>
+    </div>`;
+  });
+
+  cont.innerHTML = html;
+  actualizarContador();
+}
+
+function responder(letra,id){
+  if(respondida) return;
+  respondida = true;
+
+  const lista = obtenerLista();
+  const p = lista.find(q=>q.id===id);
+  const cont = document.getElementById("test");
+
+  if(letra === p.correcta){
+    aciertos++;
+    cont.innerHTML += `<p class="correcta">✔ Respuesta correcta</p><p class="info">Tema: ${p.tema}</p>`;
+
+    if(modoActual==="falladas"){
+      preguntasFalladas = preguntasFalladas.filter(q=>q.id!==id);
+      guardarFalladas();
+    }
+  } else {
+    fallos++;
+    cont.innerHTML += `<p class="incorrecta">✘ Respuesta incorrecta</p><p class="info">Tema: ${p.tema}</p>`;
+
+    if(!preguntasFalladas.some(q=>q.id===id)){
+      preguntasFalladas.push(p);
+      guardarFalladas();
+    }
+  }
+
+  setTimeout(()=>{
+    indice++;
+    mostrarPregunta();
+  },1500);
+}
+
+function guardarFalladas(){
+  localStorage.setItem("falladas",JSON.stringify(preguntasFalladas));
+}
+
+function actualizarContador(){
+  document.getElementById("contador").innerText =
+  `Aciertos: ${aciertos} | Fallos: ${fallos}`;
+}
+
+mostrarPregunta();
+</script>
+
+</body>
+</html>
